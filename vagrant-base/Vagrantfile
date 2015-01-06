@@ -1,0 +1,42 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+boxes = [
+  { :name => :lsdev01, :ip => '192.168.33.100', :cpus =>2, :memory => 1024 },
+  { :name => :lsdev02, :ip => '192.168.33.101', :cpus =>2, :memory => 1024 }
+]
+
+Vagrant.configure(2) do |config|
+	boxes.each do |opts|
+		config.vm.define opts[:name] do |config|
+			# use the base cluster
+			config.vm.box = "Ubuntu14-KSCluster"
+			config.vm.box_url = "N:/Public/vagrant/vagrant-storm-cluster/U14KSTC.box"
+
+			config.vm.network :private_network, ip: opts[:ip]
+			config.vm.host_name =  "%s" % opts[:name].to_s
+
+			config.vm.provider "virtualbox" do |vb|
+				# Display the VirtualBox GUI when booting the machine
+				vb.gui = true
+
+				# Customize the amount of memory on the VM:
+				vb.memory = opts[:memory]
+				vb.cpus = opts[:cpus] if opts[:cpus]
+			end
+
+			# bootstrap puppet if needed
+			config.vm.provision :shell, :path => "scripts/installPuppetNode.sh"
+
+			# base machine is now configured... 
+			# add specifics here...
+			config.vm.provision :puppet do |puppet|
+        		puppet.manifests_path = 'manifests'
+        		puppet.module_path = 'modules'
+      		end
+
+		end
+
+	end
+
+end
